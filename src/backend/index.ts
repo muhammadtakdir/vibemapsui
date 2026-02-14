@@ -25,20 +25,27 @@ app.get('/', (c) => c.text('VibeMap API v1'));
 
 // --- Authentication ---
 app.post('/api/auth/google', async (c) => {
-  const { email, username, avatarUrl, walletAddress } = await c.req.json();
-  
-  // Upsert user based on email
-  const newUser = await db.insert(users).values({
-    email,
-    walletAddress,
-    username,
-    avatarUrl,
-  }).onConflictDoUpdate({
-    target: users.email,
-    set: { walletAddress, avatarUrl, username }
-  }).returning();
+  try {
+    const { email, username, avatarUrl, walletAddress } = await c.req.json();
+    console.log('[Backend] Received Google Auth:', { email, username });
 
-  return c.json({ user: newUser[0] });
+    // Upsert user based on email
+    const newUser = await db.insert(users).values({
+      email,
+      walletAddress,
+      username,
+      avatarUrl,
+    }).onConflictDoUpdate({
+      target: users.email,
+      set: { walletAddress, avatarUrl, username }
+    }).returning();
+
+    console.log('[Backend] User upserted:', newUser[0]?.id);
+    return c.json({ user: newUser[0] });
+  } catch (error) {
+    console.error('[Backend] Auth Error:', error);
+    return c.json({ error: 'Failed to sync user', details: String(error) }, 500);
+  }
 });
 
 // Placeholder for Telegram InitData verification
