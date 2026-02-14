@@ -69,12 +69,13 @@ module vibe_map::venue_registry {
         image_url: vector<u8>,
         caption: String,
         rating: u8,
+        recipient: address, // Add recipient
         clock: &Clock,
         ctx: &mut TxContext
-    ): VibStamp {
+    ) {
         venue.total_check_ins = venue.total_check_ins + 1;
         
-        vib_stamp::mint_internal(
+        let stamp = vib_stamp::mint_internal(
             venue.id.to_inner(),
             venue.total_check_ins,
             image_url,
@@ -84,7 +85,10 @@ module vibe_map::venue_registry {
             venue.longitude,
             clock,
             ctx
-        )
+        );
+
+        // Transfer to the specified recipient (User), not the sender (Admin)
+        transfer::public_transfer(stamp, recipient);
     }
 
     public fun claim_venue(venue: &mut Venue, ctx: &mut TxContext) {

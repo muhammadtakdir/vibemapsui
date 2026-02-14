@@ -16,36 +16,23 @@ interface VenueState {
   selectedVenue: Venue | null
   setVenues: (venues: Venue[]) => void
   setSelectedVenue: (venue: Venue | null) => void
+  fetchVenues: (lat: number, lng: number) => Promise<void>
 }
 
 export const useVenueStore = create<VenueState>((set) => ({
-  venues: [
-    {
-      id: '1',
-      name: 'Pantai Losari',
-      category: 'Landmark',
-      latitude: -5.1425,
-      longitude: 119.4075,
-      address: 'Jl. Penghibur, Makassar',
-    },
-    {
-      id: '2',
-      name: 'Fort Rotterdam',
-      category: 'Museum',
-      latitude: -5.1337,
-      longitude: 119.4031,
-      address: 'Jl. Ujung Pandang, Makassar',
-    },
-    {
-      id: '3',
-      name: 'Trans Studio Mall',
-      category: 'Mall',
-      latitude: -5.1583,
-      longitude: 119.3944,
-      address: 'Jl. Metro Tanjung Bunga',
-    }
-  ],
+  venues: [],
   selectedVenue: null,
   setVenues: (venues) => set({ venues }),
   setSelectedVenue: (venue) => set({ selectedVenue: venue }),
+  fetchVenues: async (lat, lng) => {
+    try {
+      const response = await fetch(`/api/venues/nearby?lat=${lat}&lng=${lng}`);
+      if (response.ok) {
+        const data = await response.json();
+        set({ venues: data });
+      }
+    } catch (e) {
+      console.error('Failed to fetch venues', e);
+    }
+  }
 }))

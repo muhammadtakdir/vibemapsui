@@ -27,7 +27,7 @@ function ChangeView({ center }: { center: [number, number] }) {
 }
 
 export const MapView = () => {
-  const { venues, setSelectedVenue } = useVenueStore();
+  const { venues, setSelectedVenue, fetchVenues } = useVenueStore();
   // Default to Makassar, Indonesia
   const [center, setCenter] = useState<[number, number]>([-5.1476, 119.4173]);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -40,13 +40,18 @@ export const MapView = () => {
           const newPos: [number, number] = [latitude, longitude];
           setCenter(newPos);
           setUserLocation(newPos);
+          fetchVenues(latitude, longitude); // Fetch real venues nearby
         },
         (error) => {
           console.error("Error getting location", error);
+          // Fallback fetch for default location
+          fetchVenues(-5.1476, 119.4173);
         }
       );
+    } else {
+       fetchVenues(-5.1476, 119.4173);
     }
-  }, []);
+  }, [fetchVenues]);
 
   return (
     <div className="w-full h-full relative z-0">
