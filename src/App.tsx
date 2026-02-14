@@ -2,30 +2,56 @@ import { useEffect } from 'react'
 import WebApp from '@twa-dev/sdk'
 import { MapView } from './components/MapView'
 import { VenueSheet } from './components/VenueSheet'
+import { LoginScreen } from './components/LoginScreen'
 import { useVenueStore } from './store/useVenueStore'
+import { useAuthStore } from './store/useAuthStore'
+import { jwtDecode } from 'jwt-decode'
 
 function App() {
   const { selectedVenue } = useVenueStore()
+  const { isAuthenticated, login } = useAuthStore()
 
   useEffect(() => {
+    // Check for zkLogin callback in URL
+    const hash = window.location.hash;
+    const params = new URLSearchParams(hash.replace('#', ''));
+    const idToken = params.get('id_token');
+
+    if (idToken) {
+      try {
+        const decoded: any = jwtDecode(idToken);
+        console.log('User logged in:', decoded);
+        login(decoded);
+        // Clear hash to clean URL
+        window.history.replaceState(null, '', window.location.pathname);
+      } catch (e) {
+        console.error('Invalid token', e);
+      }
+    }
+
+    // Initialize Telegram SDK
     WebApp.ready()
     WebApp.expand()
-    
-    // Set theme colors
     document.documentElement.className = WebApp.colorScheme
-  }, [])
+  }, [login])
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
 
   return (
     <div className="h-screen w-full relative overflow-hidden bg-background text-foreground">
+      {/* Map is fullscreen background */}
+      <main className="h-full w-full absolute top-0 left-0 bottom-0 right-0 z-0">
+        <MapView />
+      </main>
+
+      {/* Header Overlay */}
       <header className="absolute top-0 left-0 right-0 z-10 p-4 flex justify-between items-center pointer-events-none">
         <div className="bg-white/80 dark:bg-black/80 backdrop-blur-md px-4 py-2 rounded-full shadow-lg pointer-events-auto">
           <h1 className="font-bold text-lg">VibeMap</h1>
         </div>
       </header>
-
-      <main className="h-full w-full absolute top-0 left-0 bottom-0 right-0 z-0">
-        <MapView />
-      </main>
 
       {selectedVenue && <VenueSheet venue={selectedVenue} />}
       
