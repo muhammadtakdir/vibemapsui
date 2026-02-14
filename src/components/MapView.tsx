@@ -8,7 +8,7 @@ import L from 'leaflet';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
-let DefaultIcon = L.icon({
+const DefaultIcon = L.icon({
     iconUrl: icon,
     shadowUrl: iconShadow,
     iconSize: [25, 41],
@@ -28,35 +28,38 @@ function ChangeView({ center }: { center: [number, number] }) {
 
 export const MapView = () => {
   const { venues, setSelectedVenue } = useVenueStore();
-  const defaultCenter: [number, number] = [-5.1476, 119.4173]; // Makassar
+  // Default to Makassar, Indonesia
+  const defaultCenter: [number, number] = [-5.1476, 119.4173];
 
   return (
-    <MapContainer 
-      center={defaultCenter} 
-      zoom={13} 
-      style={{ height: '100%', width: '100%' }}
-      zoomControl={false} // Custom placement if needed, or use default
-    >
-      <ZoomControl position="bottomright" />
-      
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-
-      <ChangeView center={defaultCenter} />
-
-      {venues.map((venue) => (
-        <Marker 
-          key={venue.id} 
-          position={[venue.latitude, venue.longitude]}
-          eventHandlers={{
-            click: () => {
-              setSelectedVenue(venue);
-            },
-          }}
+    <div className="w-full h-full relative z-0">
+      <MapContainer 
+        center={defaultCenter} 
+        zoom={13} 
+        style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}
+        zoomControl={false}
+      >
+        <ZoomControl position="bottomright" />
+        
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-      ))}
-    </MapContainer>
+
+        <ChangeView center={defaultCenter} />
+
+        {venues.map((venue) => (
+          <Marker 
+            key={venue.id} 
+            position={[venue.latitude, venue.longitude]}
+            eventHandlers={{
+              click: () => {
+                setSelectedVenue(venue);
+              },
+            }}
+          />
+        ))}
+      </MapContainer>
+    </div>
   );
 };
