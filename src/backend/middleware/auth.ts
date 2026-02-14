@@ -4,18 +4,25 @@ import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 
 export const authMiddleware = async (c: Context, next: Next) => {
-  const authHeader = c.req.header('Authorization');
+  let authHeader = '';
+  try {
+    authHeader = c.req.header('Authorization') || '';
+  } catch (e) {
+    console.error('[AuthMiddleware] Error reading header:', e);
+  }
   
   if (!authHeader) {
-    return c.json({ error: 'Unauthorized' }, 401);
+    return c.json({ error: 'Unauthorized: No token provided' }, 401);
   }
 
   const token = authHeader.replace('Bearer ', '');
   
-  // In a real app, verify JWT here
-  // For MVP, we'll assume the token is the Telegram ID for simplicity or look up the user
+  // For MVP, look up user by email or telegramId (if using sub as email)
   const user = await db.query.users.findFirst({
-    where: eq(users.telegramId, token)
+    where: (users, { eq, or }) => or(
+        eq(users.telegramId, token),
+        eq(users.email, token)
+    )
   });
 
   if (!user) {

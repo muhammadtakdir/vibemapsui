@@ -68,16 +68,43 @@ app.post('/api/auth/telegram', async (c) => {
 
 // --- Venues ---
 app.get('/api/venues/nearby', async (c) => {
-  const { lat, lng, radius = 5000 } = c.req.query();
-  const latitude = parseFloat(lat);
-  const longitude = parseFloat(lng);
+  try {
+    const { lat, lng, radius = 5000 } = c.req.query();
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
 
-  // Simple bounding box query (can be replaced with PostGIS if available)
-  const nearbyVenues = await db.select().from(venues).where(
-    sql`ABS(latitude - ${latitude}) < 0.1 AND ABS(longitude - ${longitude}) < 0.1`
-  );
+    console.log(`[Backend] Searching venues near: ${latitude}, ${longitude}`);
 
-  return c.json(nearbyVenues);
+    const nearbyVenues = await db.select().from(venues).where(
+      sql`ABS(latitude - ${latitude}) < 0.1 AND ABS(longitude - ${longitude}) < 0.1`
+    );
+
+    return c.json(nearbyVenues);
+  } catch (error) {
+    console.error('[Backend] Fetch Venues Error:', error);
+    return c.json({ error: 'Failed to fetch venues' }, 500);
+  }
+});
+
+app.post('/api/venues', authMiddleware, async (c) => {
+  try {
+    const { name, category, latitude, longitude, address } = await c.req.json();
+    
+    const newVenue = await db.insert(venues).values({
+      name,
+      category,
+      latitude,
+      longitude,
+      address,
+      totalCheckIns: 0,
+      verified: false,
+    }).returning();
+
+    return c.json(newVenue[0]);
+  } catch (error) {
+    console.error('[Backend] Create Venue Error:', error);
+    return c.json({ error: 'Failed to create venue' }, 500);
+  }
 });
 
 // --- Check-ins ---

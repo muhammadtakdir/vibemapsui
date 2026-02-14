@@ -29,7 +29,7 @@ function App() {
           email: decoded.email,
           username: decoded.name || decoded.email.split('@')[0], // Fallback name
           avatarUrl: decoded.picture,
-          walletAddress: '0x' + '0'.repeat(64), // Placeholder
+          walletAddress: '0xe087a0ab3b923216b1792aa6343efa5b6bdd90c7c684741e047c3b9b5629e077', // Default admin wallet for now
           ...decoded
         };
         
@@ -39,12 +39,15 @@ function App() {
         // 2. Sync with Supabase Backend (Background)
         fetch('/api/auth/google', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${decoded.email}` // Send email as identification
+          },
           body: JSON.stringify({
             email: decoded.email,
             username: decoded.name,
             avatarUrl: decoded.picture,
-            walletAddress: '0x' + '0'.repeat(64), // Placeholder
+            walletAddress: optimisticUser.walletAddress,
           })
         })
         .then(res => {
