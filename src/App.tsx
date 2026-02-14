@@ -21,9 +21,19 @@ function App() {
     if (idToken) {
       try {
         const decoded: any = jwtDecode(idToken);
-        console.log('User logged in:', decoded);
+        console.log('User logged in (Frontend):', decoded);
         
-        // Sync with Supabase Backend
+        // 1. Optimistic Login: Update UI immediately
+        // Use decoded data temporarily until backend returns full user object
+        login({
+          email: decoded.email,
+          username: decoded.name,
+          avatarUrl: decoded.picture,
+          walletAddress: '0x...', // Placeholder
+          ...decoded
+        });
+
+        // 2. Sync with Supabase Backend (Background)
         fetch('/api/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -31,10 +41,21 @@ function App() {
             email: decoded.email,
             username: decoded.name,
             avatarUrl: decoded.picture,
-            walletAddress: '0xe087a0ab3b923216b1792aa6343efa5b6bdd90c7c684741e047c3b9b5629e077', // Placeholder
+            walletAddress: '0x' + '0'.repeat(64), // Placeholder
           })
-        }).then(res => res.json()).then(data => {
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Backend sync failed');
+            return res.json();
+        })
+        .then(data => {
+          console.log('Backend Sync Success:', data.user);
+          // 3. Update with real data from DB (e.g. real wallet address if exists)
           login(data.user);
+        })
+        .catch(err => {
+            console.error('Backend Sync Error:', err);
+            // User stays logged in even if backend sync fails
         });
 
         window.history.replaceState(null, '', window.location.pathname);
