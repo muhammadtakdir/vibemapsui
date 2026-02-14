@@ -7,10 +7,41 @@ export const ExploreModal = ({ onClose }: { onClose: () => void }) => {
   const [board, setBoard] = useState<any[]>([]);
   const [notes, setNotes] = useState<any[]>([]);
 
-  useEffect(() => { if (tab === 'trending') fetch('/api/venues/trending').then(r=>r.json()).then(setVenues).catch(()=>setVenues([])) }, [tab]);
-  useEffect(() => { if (tab === 'feed') fetch('/api/feed', { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('zklogin_user_email') || ''}` } }).then(r=>r.json()).then(setFeed).catch(()=>setFeed([])) }, [tab]);
-  useEffect(() => { if (tab === 'leaderboard') fetch('/api/leaderboard').then(r=>r.json()).then(setBoard).catch(()=>setBoard([])) }, [tab]);
-  useEffect(() => { if (tab === 'notifications') fetch('/api/notifications', { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('zklogin_user_email') || ''}` } }).then(r=>r.json()).then(setNotes).catch(()=>setNotes([])) }, [tab]);
+  useEffect(() => {
+    if (tab === 'trending') {
+      fetch('/api/venues/trending')
+        .then(async (r) => r.ok ? await r.json() : [])
+        .then((data) => setVenues(Array.isArray(data) ? data : []))
+        .catch(() => setVenues([]));
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab === 'feed') {
+      fetch('/api/feed', { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('zklogin_user_email') || ''}` } })
+        .then(async (r) => r.ok ? await r.json() : [])
+        .then((data) => setFeed(Array.isArray(data) ? data : []))
+        .catch(() => setFeed([]));
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab === 'leaderboard') {
+      fetch('/api/leaderboard')
+        .then(async (r) => r.ok ? await r.json() : [])
+        .then((data) => setBoard(Array.isArray(data) ? data : []))
+        .catch(() => setBoard([]));
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab === 'notifications') {
+      fetch('/api/notifications', { headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('zklogin_user_email') || ''}` } })
+        .then(async (r) => r.ok ? await r.json() : [])
+        .then((data) => setNotes(Array.isArray(data) ? data : []))
+        .catch(() => setNotes([]));
+    }
+  }, [tab]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 bg-black/30 p-4">

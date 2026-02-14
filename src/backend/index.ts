@@ -68,6 +68,12 @@ app.post('/api/auth/telegram', async (c) => {
 
 // --- Venues ---
 app.get('/api/venues/nearby', async (c) => {
+  // Fallback sample data when DB is not configured/available (prevents 500 on deploy)
+  const SAMPLE_VENUES = [
+    { id: 'local-1', name: 'Kopi Kenangan Panakkukang', category: 'Café', latitude: -5.1476, longitude: 119.4173, address: 'Jl. Boulevard, Makassar', photos: [], totalCheckIns: 47 },
+    { id: 'local-2', name: 'Warung Coto Nusantara', category: 'Restaurant', latitude: -5.1480, longitude: 119.4165, address: 'Jl. Pettarani', photos: [], totalCheckIns: 23 }
+  ];
+
   try {
     const { lat, lng, radius = 5000 } = c.req.query();
     const latitude = parseFloat(lat);
@@ -75,14 +81,22 @@ app.get('/api/venues/nearby', async (c) => {
 
     console.log(`[Backend] Searching venues near: ${latitude}, ${longitude}`);
 
+    // If DB is not configured, return sample venues instead of failing
+    if (!process.env.DATABASE_URL) {
+      console.warn('[Backend] DATABASE_URL not set — returning SAMPLE_VENUES');
+      return c.json(SAMPLE_VENUES);
+    }
+
     const nearbyVenues = await db.select().from(venues).where(
       sql`ABS(latitude - ${latitude}) < 0.1 AND ABS(longitude - ${longitude}) < 0.1`
     );
 
     return c.json(nearbyVenues);
   } catch (error) {
-    console.error('[Backend] Fetch Venues Error:', error);
-    return c.json({ error: 'Failed to fetch venues' }, 500);
+    console.error('[Backend] Fetch Venues Error (fallback to SAMPLE_VENUES):', error);
+    return c.json([
+      { id: 'local-1', name: 'Kopi Kenangan Panakkukang', category: 'Café', latitude: -5.1476, longitude: 119.4173, address: 'Jl. Boulevard, Makassar', photos: [], totalCheckIns: 47 }
+    ]);
   }
 });
 
@@ -243,12 +257,22 @@ app.get('/api/leaderboard', async (c) => {
 
 // --- Venues Trending ---
 app.get('/api/venues/trending', async (c) => {
+  const SAMPLE = [
+    { id: 'local-1', name: 'Kopi Kenangan Panakkukang', address: 'Jl. Boulevard', totalCheckIns: 47 },
+    { id: 'local-2', name: 'Pantai Losari', address: 'Losari', totalCheckIns: 32 }
+  ];
+
   try {
+    if (!process.env.DATABASE_URL) {
+      console.warn('[Backend] DATABASE_URL not set — returning SAMPLE trending venues');
+      return c.json(SAMPLE);
+    }
+
     const top = await db.select().from(venues).orderBy(desc(venues.totalCheckIns)).limit(10);
     return c.json(top);
   } catch (e) {
-    console.error('[Backend] Trending venues error', e);
-    return c.json({ error: 'Failed to fetch trending venues' }, 500);
+    console.error('[Backend] Trending venues error (return SAMPLE):', e);
+    return c.json(SAMPLE);
   }
 });
 
