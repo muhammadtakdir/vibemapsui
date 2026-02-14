@@ -3,7 +3,7 @@ import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 export const zkLoginConfig = {
     CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER.apps.googleusercontent.com',
-    REDIRECT_URI: 'https://vibemap.app/callback', // Update this to your Vercel URL later
+    REDIRECT_URI: window.location.origin, // Automatically uses current domain (e.g. localhost or vercel)
 };
 
 export const initZkLogin = () => {
