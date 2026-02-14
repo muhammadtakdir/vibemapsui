@@ -43,9 +43,16 @@ export const ExploreModal = ({ onClose }: { onClose: () => void }) => {
     }
   }, [tab]);
 
+  // close on Escape
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 bg-black/30 p-4">
-      <div className="w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-800">
+    <div onClick={onClose} className="fixed inset-0 z-50 flex items-start justify-center pt-16 bg-black/30 p-4">
+      <div onClick={(e) => e.stopPropagation()} className="relative w-full max-w-3xl bg-white dark:bg-zinc-900 rounded-2xl p-4 border border-zinc-200 dark:border-zinc-800">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">Explore</h3>
           <div className="flex gap-2">

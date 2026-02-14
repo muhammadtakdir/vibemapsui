@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Camera, X, Star } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 
@@ -8,6 +8,8 @@ export const CheckInModal = ({ venue, onClose, onSuccess }: { venue: any; onClos
   const [caption, setCaption] = useState('');
   const [rating, setRating] = useState(5);
   const [loading, setLoading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFile = (f?: File | null) => {
     const picked = f || null;
@@ -23,6 +25,14 @@ export const CheckInModal = ({ venue, onClose, onSuccess }: { venue: any; onClos
   const pickFromInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
   };
+
+  // Auto-open camera/file picker when modal mounts (user gesture originates from click that opened modal)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try { fileInputRef.current?.click(); } catch (e) { /* ignore */ }
+    }, 120);
+    return () => clearTimeout(t);
+  }, []);
 
   const submit = async () => {
     setLoading(true);
@@ -109,7 +119,7 @@ export const CheckInModal = ({ venue, onClose, onSuccess }: { venue: any; onClos
 
         <div className="flex gap-2 mb-3">
           <label className="flex-1">
-            <input type="file" accept="image/*" capture="environment" onChange={pickFromInput} className="hidden" />
+            <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={pickFromInput} className="hidden" />
             <div className="w-full py-2 bg-zinc-100 dark:bg-zinc-800/40 rounded-lg text-center cursor-pointer">Choose / Take Photo</div>
           </label>
           <button onClick={() => handleFile(null)} className="px-3 py-2 bg-zinc-50 dark:bg-zinc-800 rounded-lg">Remove</button>
