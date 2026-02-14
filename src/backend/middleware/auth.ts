@@ -17,7 +17,27 @@ export const authMiddleware = async (c: Context, next: Next) => {
 
   const token = authHeader.replace('Bearer ', '');
 
-  // Try DB lookup first; if Postgres/Drizzle is unreachable, fall back to Supabase HTTP client
+  // Prefer Supabase HTTP lookup first (fast in serverless). If not found, try Postgres/Drizzle.
+  try {
+    const { data, error } = await supabase.from('users').select('*').or(`telegram_id.eq.${token},email.eq.${token}`).limit(1).single();
+    if (!error && data) {
+      const user = {
+        id: data.id,
+        telegramId: data.telegram_id ?? data.telegramId,
+        walletAddress: data.wallet_address ?? data.walletAddress,
+        username: data.username,
+        avatarUrl: data.avatar_url ?? data.avatarUrl,
+        totalStamps: data.total_stamps ?? data.totalStamps
+      };
+      c.set('user', user as any);
+      await next();
+      return;
+    }
+  } catch (supErr: any) {
+    console.warn('[AuthMiddleware] Supabase lookup failed, will try DB next:', supErr?.message || supErr);
+  }
+
+  // If Supabase didn't return a user, try Postgres/Drizzle (may be used in local dev)
   try {
     const user = await db.query.users.findFirst({
       where: (users, { eq, or }) => or(
@@ -32,32 +52,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
       return;
     }
   } catch (dbErr: any) {
-    console.warn('[AuthMiddleware] DB lookup failed, falling back to Supabase client:', dbErr?.message || dbErr);
-    // continue to try Supabase below
-  }
-
-  // Fallback: try Supabase service-role query (HTTP)
-  try {
-    const { data, error } = await supabase.from('users').select('*').or(`telegram_id.eq.${token},email.eq.${token}`).limit(1).single();
-    if (error) {
-      console.warn('[AuthMiddleware] Supabase fallback returned error:', error.message);
-    }
-    if (data) {
-      // Keep shape similar to DB user row
-      const user = {
-        id: data.id,
-        telegramId: data.telegram_id ?? data.telegramId,
-        walletAddress: data.wallet_address ?? data.walletAddress,
-        username: data.username,
-        avatarUrl: data.avatar_url ?? data.avatarUrl,
-        totalStamps: data.total_stamps ?? data.totalStamps
-      };
-      c.set('user', user as any);
-      await next();
-      return;
-    }
-  } catch (supErr: any) {
-    console.error('[AuthMiddleware] Supabase fallback failed:', supErr?.message || supErr);
+    console.warn('[AuthMiddleware] DB lookup failed after Supabase attempt:', dbErr?.message || dbErr);
   }
 
   return c.json({ error: 'User not found' }, 401);
