@@ -46,8 +46,8 @@ function App() {
       </main>
 
       {/* Header Overlay */}
-      <header className="absolute top-0 left-0 right-0 z-20 p-4 pointer-events-none">
-        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg pointer-events-auto border border-zinc-200 dark:border-zinc-800 w-fit mx-auto">
+      <header className="absolute top-4 left-0 right-0 z-30 flex justify-center pointer-events-none">
+        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg pointer-events-auto border border-zinc-200 dark:border-zinc-800">
           <h1 className="font-bold text-lg tracking-tight text-blue-600 dark:text-blue-400">VibeMap</h1>
         </div>
       </header>
@@ -55,15 +55,18 @@ function App() {
       {selectedVenue && <VenueSheet venue={selectedVenue} />}
       
       {/* Navigation Bar */}
-      <nav className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-4 items-center pointer-events-none">
+      <nav className="absolute bottom-8 left-0 right-0 z-30 flex justify-center pointer-events-none">
         <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-8 py-4 rounded-full shadow-2xl flex gap-10 items-center border border-zinc-200 dark:border-zinc-800 pointer-events-auto">
-          <button className="text-blue-600 dark:text-blue-400 transition-all active:scale-75">
+          <button 
+            onClick={() => console.log('Home clicked')}
+            className="text-blue-600 dark:text-blue-400 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
+          >
             <Home size={28} strokeWidth={2.5} />
           </button>
-          <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-all active:scale-75">
+          <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90">
             <Info size={28} strokeWidth={2.5} />
           </button>
-          <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-all active:scale-75">
+          <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90">
             <User size={28} strokeWidth={2.5} />
           </button>
         </div>
