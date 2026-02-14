@@ -174,14 +174,14 @@ function App() {
       <nav className="absolute bottom-8 left-0 right-0 z-30 flex justify-center pointer-events-auto">
         <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-8 py-4 rounded-full shadow-2xl flex gap-10 items-center border border-zinc-200 dark:border-zinc-800">
           <button 
-            onClick={() => { console.log('Home Clicked'); alert('Home Clicked'); }}
+            onClick={() => console.log('Home Clicked')}
             className="text-blue-600 dark:text-blue-400 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <Home size={28} strokeWidth={2.5} />
           </button>
           
           <button 
-            onClick={() => { console.log('Info Clicked'); alert('Info / Activity Log'); }}
+            onClick={() => console.log('Info Clicked')}
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <Info size={28} strokeWidth={2.5} />
@@ -197,7 +197,7 @@ function App() {
           </button>
 
           <button 
-            onClick={() => { console.log('Profile Clicked'); alert('User Profile & Settings'); }}
+            onClick={() => console.log('Profile Clicked')}
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <User size={28} strokeWidth={2.5} />
