@@ -1,14 +1,18 @@
 import { useVenueStore } from '../store/useVenueStore';
 import { Camera, MapPin, X } from 'lucide-react';
 import WebApp from '@twa-dev/sdk';
+import { useState } from 'react';
+import { CheckInModal } from './CheckInModal';
+import { useCollectionStore } from '../store/useCollectionStore';
+import type { Stamp } from '../store/useCollectionStore';
 
 export const VenueSheet = ({ venue }: { venue: any }) => {
   const { setSelectedVenue } = useVenueStore();
+  const [showCheckIn, setShowCheckIn] = useState(false);
 
   const handleCheckIn = () => {
     WebApp.HapticFeedback.impactOccurred('medium');
-    // Proceed to check-in camera or flow
-    console.log('Checking in at', venue.name);
+    setShowCheckIn(true);
   };
 
   return (
@@ -52,6 +56,26 @@ export const VenueSheet = ({ venue }: { venue: any }) => {
         <Camera size={20} />
         Check In & Mint Stamp
       </button>
+
+      {showCheckIn && (
+        <CheckInModal venue={venue} onClose={() => setShowCheckIn(false)} onSuccess={(res) => {
+          // Add to local collection store (works offline / mock too)
+          const add = useCollectionStore.getState().addStamp;
+          const stamp: Stamp = {
+            id: String(res?.checkIn?.id || res?.stampNftId || `local-${Date.now()}`),
+            venueName: venue.name,
+            photoUrl: (res?.checkIn?.photoUrl || res?.photoUrl) || 'https://vibemap.app/default-stamp.png',
+            caption: String(res?.checkIn?.caption || 'Visited!'),
+            rating: Number(res?.checkIn?.rating || 5),
+            timestamp: new Date().toISOString(),
+            rarity: 'SILVER',
+            nftId: res?.stampNftId || res?.checkIn?.stampNftId || undefined
+          };
+
+          add(stamp);
+          console.log('Check-in success (added to local collection):', stamp);
+        }} />
+      )}
     </div>
   );
 };

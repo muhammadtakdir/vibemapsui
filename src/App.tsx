@@ -1,16 +1,23 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import WebApp from '@twa-dev/sdk'
 import { MapView } from './components/MapView'
 import { VenueSheet } from './components/VenueSheet'
 import { LoginScreen } from './components/LoginScreen'
+import { OnboardingScreen } from './components/OnboardingScreen'
 import { useVenueStore } from './store/useVenueStore'
 import { useAuthStore } from './store/useAuthStore'
 import { jwtDecode } from 'jwt-decode'
 import { Home, User, Info, MapPin } from 'lucide-react'
-
+import { ProfileModal } from './components/ProfileModal'
+import { ExploreModal } from './components/ExploreModal'
 function App() {
   const { selectedVenue } = useVenueStore()
   const { isAuthenticated, login } = useAuthStore()
+  const [onboardingDone, setOnboardingDone] = useState(() => {
+    return localStorage.getItem('onboarding_done') === '1';
+  });
+  const [showProfile, setShowProfile] = useState(false);
+  const [showExplore, setShowExplore] = useState(false);
 
   useEffect(() => {
     // Check for zkLogin callback in URL
@@ -76,6 +83,13 @@ function App() {
     document.documentElement.className = WebApp.colorScheme || 'dark'
   }, [login])
 
+  if (!onboardingDone) {
+    return <OnboardingScreen onFinish={() => {
+      localStorage.setItem('onboarding_done', '1');
+      setOnboardingDone(true);
+    }} />;
+  }
+
   const handleVibeDrop = async () => {
     console.log('[UI] Drop Vibe button clicked');
     if (!navigator.geolocation) {
@@ -97,7 +111,7 @@ function App() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${isAuthenticated ? (isAuthenticated as any).sub : ''}` 
+            'Authorization': `Bearer ${useAuthStore.getState().user?.email || useAuthStore.getState().user?.telegramId || ''}`
           },
           body: JSON.stringify({
             venueId: '1', 
@@ -184,7 +198,7 @@ function App() {
           </button>
           
           <button 
-            onClick={() => console.log('Info Clicked')}
+            onClick={() => setShowExplore(true)}
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <Info size={28} strokeWidth={2.5} />
@@ -200,13 +214,16 @@ function App() {
           </button>
 
           <button 
-            onClick={() => console.log('Profile Clicked')}
+            onClick={() => setShowProfile(true)}
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <User size={28} strokeWidth={2.5} />
           </button>
         </div>
       </nav>
+
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
+      {showExplore && <ExploreModal onClose={() => setShowExplore(false)} />}
     </div>
   )
 }
