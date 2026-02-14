@@ -134,27 +134,51 @@ function App() {
         <MapView />
       </main>
 
-      {/* Header Overlay */}
-      <header className="absolute top-4 left-0 right-0 z-30 flex justify-center pointer-events-none">
-        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-6 py-3 rounded-full shadow-lg pointer-events-auto border border-zinc-200 dark:border-zinc-800">
-          <h1 className="font-bold text-lg tracking-tight text-blue-600 dark:text-blue-400">VibeMap</h1>
+      {/* Header Overlay - User Profile */}
+      <header className="absolute top-4 left-4 right-4 z-30 flex justify-between items-center pointer-events-none">
+        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md p-2 pr-4 rounded-full shadow-lg pointer-events-auto border border-zinc-200 dark:border-zinc-800 flex items-center gap-3">
+          {isAuthenticated && useAuthStore.getState().user?.avatarUrl ? (
+            <img 
+              src={useAuthStore.getState().user.avatarUrl} 
+              alt="Profile" 
+              className="w-10 h-10 rounded-full border-2 border-blue-500"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+              {useAuthStore.getState().user?.username?.charAt(0) || 'U'}
+            </div>
+          )}
+          <div className="flex flex-col">
+            <span className="text-sm font-bold text-zinc-800 dark:text-zinc-100 leading-tight">
+              {useAuthStore.getState().user?.username || 'Vibe Explorer'}
+            </span>
+            <span className="text-[10px] text-zinc-500 font-mono">
+              {useAuthStore.getState().user?.walletAddress?.slice(0, 6)}...{useAuthStore.getState().user?.walletAddress?.slice(-4)}
+            </span>
+          </div>
+        </div>
+        
+        {/* Settings/Points Badge */}
+        <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-3 py-2 rounded-full shadow-lg pointer-events-auto border border-zinc-200 dark:border-zinc-800 flex items-center gap-1">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+          <span className="text-xs font-bold">Online</span>
         </div>
       </header>
 
       {selectedVenue && <VenueSheet venue={selectedVenue} />}
       
       {/* Navigation Bar */}
-      <nav className="absolute bottom-8 left-0 right-0 z-30 flex justify-center pointer-events-none">
-        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-8 py-4 rounded-full shadow-2xl flex gap-10 items-center border border-zinc-200 dark:border-zinc-800 pointer-events-auto">
+      <nav className="absolute bottom-8 left-0 right-0 z-30 flex justify-center pointer-events-auto">
+        <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-8 py-4 rounded-full shadow-2xl flex gap-10 items-center border border-zinc-200 dark:border-zinc-800">
           <button 
-            onClick={() => console.log('[UI] Home button clicked')}
+            onClick={() => { console.log('Home Clicked'); alert('Home Clicked'); }}
             className="text-blue-600 dark:text-blue-400 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <Home size={28} strokeWidth={2.5} />
           </button>
           
           <button 
-            onClick={() => console.log('[UI] Info/Activity button clicked')}
+            onClick={() => { console.log('Info Clicked'); alert('Info / Activity Log'); }}
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <Info size={28} strokeWidth={2.5} />
@@ -163,14 +187,14 @@ function App() {
           {/* Large Drop Vibe Button */}
           <button 
             onClick={handleVibeDrop}
-            className="bg-blue-600 dark:bg-blue-500 text-white p-5 rounded-full shadow-lg shadow-blue-500/40 -mt-12 border-4 border-white dark:border-zinc-900 transition-all active:scale-75 flex items-center justify-center relative"
+            className="bg-blue-600 dark:bg-blue-500 text-white p-5 rounded-full shadow-lg shadow-blue-500/40 -mt-12 border-4 border-white dark:border-zinc-900 transition-all active:scale-75 flex items-center justify-center relative cursor-pointer"
           >
             <div className="absolute animate-ping w-full h-full rounded-full bg-blue-400 opacity-20"></div>
             <MapPin size={32} fill="white" />
           </button>
 
           <button 
-            onClick={() => console.log('[UI] User Profile button clicked')}
+            onClick={() => { console.log('Profile Clicked'); alert('User Profile & Settings'); }}
             className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <User size={28} strokeWidth={2.5} />
