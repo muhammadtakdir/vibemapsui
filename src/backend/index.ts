@@ -29,22 +29,53 @@ app.post('/api/auth/google', async (c) => {
     const { email, username, avatarUrl, walletAddress } = await c.req.json();
     console.log('[Backend] Received Google Auth:', { email, username });
 
-    // Upsert user based on email
-    const newUser = await db.insert(users).values({
-      email,
-      walletAddress,
-      username,
-      avatarUrl,
-    }).onConflictDoUpdate({
-      target: users.email,
-      set: { walletAddress, avatarUrl, username }
-    }).returning();
+    // Prefer Postgres/Drizzle, but fallback to Supabase HTTP when DB is unreachable
+    try {
+      const newUser = await db.insert(users).values({
+        email,
+        walletAddress,
+        username,
+        avatarUrl,
+      }).onConflictDoUpdate({
+        target: users.email,
+        set: { walletAddress, avatarUrl, username }
+      }).returning();
 
-    console.log('[Backend] User upserted:', newUser[0]?.id);
-    return c.json({ user: newUser[0] });
+      console.log('[Backend] User upserted (DB):', newUser[0]?.id);
+      return c.json({ user: newUser[0] });
+    } catch (dbErr: any) {
+      console.warn('[Backend] Postgres upsert failed — falling back to Supabase HTTP:', dbErr?.message || dbErr);
+      try {
+        const { data, error } = await supabase.from('users').upsert({
+          email,
+          wallet_address: walletAddress,
+          username,
+          avatar_url: avatarUrl
+        }).select().single();
+
+        if (error) {
+          console.error('[Backend] Supabase upsert error:', error.message);
+          throw error;
+        }
+
+        const user = {
+          id: data.id,
+          email: data.email,
+          walletAddress: data.wallet_address,
+          username: data.username,
+          avatarUrl: data.avatar_url,
+          totalStamps: data.total_stamps
+        };
+        console.log('[Backend] User upserted (Supabase):', user.id);
+        return c.json({ user });
+      } catch (supErr: any) {
+        console.error('[Backend] Supabase fallback failed for auth:', supErr?.message || supErr);
+        return c.json({ error: 'Failed to sync user (both DB and Supabase failed)' }, 500);
+      }
+    }
   } catch (error) {
     console.error('[Backend] Auth Error:', error);
-    return c.json({ error: 'Failed to sync user', details: String(error) }, 500);
+    return c.json({ error: 'Invalid payload' }, 400);
   }
 });
 
@@ -126,9 +157,22 @@ app.post('/api/check-ins/sponsor', authMiddleware, async (c) => {
   const user = c.get('user') as Variables['user'];
   const { venueId, imageUrl, caption, rating, latitude, longitude } = await c.req.json();
 
-  const venue = await db.query.venues.findFirst({
-    where: eq(venues.id, venueId)
-  });
+  // Try to fetch venue via Drizzle/Postgres; fallback to Supabase HTTP if DB is unreachable
+  let venue: any = null;
+  try {
+    venue = await db.query.venues.findFirst({ where: eq(venues.id, venueId) });
+  } catch (dbErr: any) {
+    console.warn('[Backend] Postgres lookup failed for venue — falling back to Supabase:', dbErr?.message || dbErr);
+    try {
+      const { data, error } = await supabase.from('venues').select('*').eq('id', venueId).single();
+      if (error) {
+        console.warn('[Backend] Supabase venue lookup error:', error.message);
+      }
+      venue = data as any;
+    } catch (supErr: any) {
+      console.error('[Backend] Supabase venue lookup failed:', supErr?.message || supErr);
+    }
+  }
 
   if (!venue) {
     return c.json({ error: 'Venue not found' }, 400);
@@ -138,22 +182,46 @@ app.post('/api/check-ins/sponsor', authMiddleware, async (c) => {
   if (!venue.onChainId) {
     try {
       const mockStampId = `mock-${Date.now()}`;
-      const inserted = await db.insert(checkIns).values({
-        userId: user.id,
-        venueId: venue.id,
-        latitude: latitude || venue.latitude,
-        longitude: longitude || venue.longitude,
-        photoUrl: imageUrl,
-        caption,
-        rating,
-        stampNftId: mockStampId,
-        visitorNumber: (venue.totalCheckIns || 0) + 1
-      }).returning();
 
-      // update venue stats
-      await db.update(venues).set({ totalCheckIns: (venue.totalCheckIns || 0) + 1 }).where(eq(venues.id, venue.id));
+      // Attempt DB insert; if DB unavailable, fallback to Supabase insert
+      let inserted: any = null;
+      try {
+        const res = await db.insert(checkIns).values({
+          userId: user.id,
+          venueId: venue.id,
+          latitude: latitude || venue.latitude,
+          longitude: longitude || venue.longitude,
+          photoUrl: imageUrl,
+          caption,
+          rating,
+          stampNftId: mockStampId,
+          visitorNumber: (venue.totalCheckIns || 0) + 1
+        }).returning();
+        inserted = res[0];
 
-      return c.json({ mock: true, checkIn: inserted[0], stampNftId: mockStampId });
+        await db.update(venues).set({ totalCheckIns: (venue.totalCheckIns || 0) + 1 }).where(eq(venues.id, venue.id));
+      } catch (dbErr: any) {
+        console.warn('[Backend] DB insert failed for check-in — falling back to Supabase insert:', dbErr?.message || dbErr);
+        const { data: ciData, error: ciErr } = await supabase.from('check_ins').insert([{
+          user_id: user.id,
+          venue_id: venue.id,
+          latitude: latitude || venue.latitude,
+          longitude: longitude || venue.longitude,
+          photo_url: imageUrl,
+          caption,
+          rating,
+          stamp_nft_id: mockStampId,
+          visitor_number: (venue.totalCheckIns || 0) + 1
+        }]).select().single();
+        if (ciErr) throw ciErr;
+        inserted = ciData;
+
+        // update venue via Supabase
+        const { error: vErr } = await supabase.from('venues').update({ total_check_ins: (venue.totalCheckIns || 0) + 1 }).eq('id', venue.id);
+        if (vErr) console.warn('[Backend] Supabase venue update failed:', vErr.message);
+      }
+
+      return c.json({ mock: true, checkIn: inserted, stampNftId: mockStampId });
     } catch (e) {
       console.error('[Backend] Mock check-in failed:', e);
       return c.json({ error: 'Failed to save check-in (mock)' }, 500);
@@ -173,21 +241,44 @@ app.post('/api/check-ins/sponsor', authMiddleware, async (c) => {
     const visitorNumber = exec?.stamped?.visitorNumber ? parseInt(exec.stamped.visitorNumber, 10) : (venue.totalCheckIns || 0) + 1;
     const stampNftId = exec?.stamped?.stampId || `onchain-${Date.now()}`;
 
-    const inserted = await db.insert(checkIns).values({
-      userId: user.id,
-      venueId: venue.id,
-      latitude: latitude || venue.latitude,
-      longitude: longitude || venue.longitude,
-      photoUrl: imageUrl,
-      caption,
-      rating,
-      stampNftId: stampNftId?.toString?.() || null,
-      visitorNumber: visitorNumber
-    }).returning();
+    // Try DB insert/update, fallback to Supabase when DB is unreachable
+    let inserted: any = null;
+    try {
+      const res = await db.insert(checkIns).values({
+        userId: user.id,
+        venueId: venue.id,
+        latitude: latitude || venue.latitude,
+        longitude: longitude || venue.longitude,
+        photoUrl: imageUrl,
+        caption,
+        rating,
+        stampNftId: stampNftId?.toString?.() || null,
+        visitorNumber: visitorNumber
+      }).returning();
+      inserted = res[0];
 
-    await db.update(venues).set({ totalCheckIns: (venue.totalCheckIns || 0) + 1 }).where(eq(venues.id, venue.id));
+      await db.update(venues).set({ totalCheckIns: (venue.totalCheckIns || 0) + 1 }).where(eq(venues.id, venue.id));
+    } catch (dbErr: any) {
+      console.warn('[Backend] DB insert/update failed after on-chain mint — falling back to Supabase:', dbErr?.message || dbErr);
+      const { data: ciData, error: ciErr } = await supabase.from('check_ins').insert([{
+        user_id: user.id,
+        venue_id: venue.id,
+        latitude: latitude || venue.latitude,
+        longitude: longitude || venue.longitude,
+        photo_url: imageUrl,
+        caption,
+        rating,
+        stamp_nft_id: stampNftId?.toString?.() || null,
+        visitor_number: visitorNumber
+      }]).select().single();
+      if (ciErr) console.warn('[Backend] Supabase insert check_ins error:', ciErr.message);
+      inserted = ciData;
 
-    return c.json({ onChain: true, tx: exec.result, stamped: exec.stamped, checkIn: inserted[0] });
+      const { error: vErr } = await supabase.from('venues').update({ total_check_ins: (venue.totalCheckIns || 0) + 1 }).eq('id', venue.id);
+      if (vErr) console.warn('[Backend] Supabase venue update failed:', vErr.message);
+    }
+
+    return c.json({ onChain: true, tx: exec.result, stamped: exec.stamped, checkIn: inserted });
   } catch (err) {
     console.error('[Backend] executeCheckIn failed:', err);
     return c.json({ error: 'On-chain mint failed' }, 500);
