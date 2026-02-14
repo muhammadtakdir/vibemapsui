@@ -25,13 +25,16 @@ function App() {
         
         // 1. Optimistic Login: Update UI immediately
         // Use decoded data temporarily until backend returns full user object
-        login({
+        const optimisticUser = {
           email: decoded.email,
-          username: decoded.name,
+          username: decoded.name || decoded.email.split('@')[0], // Fallback name
           avatarUrl: decoded.picture,
-          walletAddress: '0x...', // Placeholder
+          walletAddress: '0x' + '0'.repeat(64), // Placeholder
           ...decoded
-        });
+        };
+        
+        console.log('[Auth] Optimistic Login Data:', optimisticUser);
+        login(optimisticUser);
 
         // 2. Sync with Supabase Backend (Background)
         fetch('/api/auth/google', {
