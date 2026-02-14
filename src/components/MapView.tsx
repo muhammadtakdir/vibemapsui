@@ -1,39 +1,62 @@
-import { useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { MapContainer, TileLayer, Marker, useMap, ZoomControl } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useVenueStore } from '../store/useVenueStore';
+import { useEffect } from 'react';
+import L from 'leaflet';
 
-// Access token should ideally come from env
-mapboxgl.accessToken = 'pk.eyJ1IjoicGxhY2Vob2xkZXIiLCJhIjoiY2x4eHh4eHh4eHh4eHh4eHh4eHh4In0.xxxxxxxxxxxxxx';
+// Fix for default marker icon in React-Leaflet
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Helper to update map center
+function ChangeView({ center }: { center: [number, number] }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center);
+  }, [center, map]);
+  return null;
+}
 
 export const MapView = () => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
   const { venues, setSelectedVenue } = useVenueStore();
+  const defaultCenter: [number, number] = [-5.1476, 119.4173]; // Makassar
 
-  useEffect(() => {
-    if (map.current || !mapContainer.current) return;
+  return (
+    <MapContainer 
+      center={defaultCenter} 
+      zoom={13} 
+      style={{ height: '100%', width: '100%' }}
+      zoomControl={false} // Custom placement if needed, or use default
+    >
+      <ZoomControl position="bottomright" />
+      
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
 
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [119.4173, -5.1476], // Makassar
-      zoom: 13,
-    });
+      <ChangeView center={defaultCenter} />
 
-    map.current.on('load', () => {
-      // Add markers when map is loaded
-      venues.forEach((venue) => {
-        const marker = new mapboxgl.Marker({ color: '#3b82f6' })
-          .setLngLat([venue.longitude, venue.latitude])
-          .addTo(map.current!);
-
-        marker.getElement().addEventListener('click', () => {
-          setSelectedVenue(venue);
-        });
-      });
-    });
-  }, [venues, setSelectedVenue]);
-
-  return <div ref={mapContainer} className="h-full w-full" />;
+      {venues.map((venue) => (
+        <Marker 
+          key={venue.id} 
+          position={[venue.latitude, venue.longitude]}
+          eventHandlers={{
+            click: () => {
+              setSelectedVenue(venue);
+            },
+          }}
+        />
+      ))}
+    </MapContainer>
+  );
 };
