@@ -1,7 +1,7 @@
-import { MapContainer, TileLayer, Marker, useMap, ZoomControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMap, ZoomControl, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useVenueStore } from '../store/useVenueStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import L from 'leaflet';
 
 // Fix for default marker icon in React-Leaflet
@@ -29,13 +29,30 @@ function ChangeView({ center }: { center: [number, number] }) {
 export const MapView = () => {
   const { venues, setSelectedVenue } = useVenueStore();
   // Default to Makassar, Indonesia
-  const defaultCenter: [number, number] = [-5.1476, 119.4173];
+  const [center, setCenter] = useState<[number, number]>([-5.1476, 119.4173]);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const newPos: [number, number] = [latitude, longitude];
+          setCenter(newPos);
+          setUserLocation(newPos);
+        },
+        (error) => {
+          console.error("Error getting location", error);
+        }
+      );
+    }
+  }, []);
 
   return (
     <div className="w-full h-full relative z-0">
       <MapContainer 
-        center={defaultCenter} 
-        zoom={13} 
+        center={center} 
+        zoom={15} 
         style={{ height: '100%', width: '100%', position: 'absolute', top: 0, left: 0 }}
         zoomControl={false}
       >
@@ -46,7 +63,23 @@ export const MapView = () => {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <ChangeView center={defaultCenter} />
+        <ChangeView center={center} />
+
+        {/* User Location Marker */}
+        {userLocation && (
+          <Circle 
+            center={userLocation} 
+            radius={50} 
+            pathOptions={{ color: 'blue', fillColor: 'blue', fillOpacity: 0.2 }}
+          />
+        )}
+        {userLocation && (
+          <Circle 
+            center={userLocation} 
+            radius={5} 
+            pathOptions={{ color: 'white', fillColor: 'blue', fillOpacity: 1, weight: 2 }}
+          />
+        )}
 
         {venues.map((venue) => (
           <Marker 
