@@ -71,25 +71,30 @@ function App() {
   }, [login])
 
   const handleVibeDrop = async () => {
+    console.log('[UI] Drop Vibe button clicked');
     if (!navigator.geolocation) {
+      console.error('[Geolocation] Not supported by this browser');
       alert("Geolocation not supported");
       return;
     }
 
     WebApp.HapticFeedback.impactOccurred('heavy');
 
+    console.log('[Geolocation] Requesting current position...');
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
+      console.log(`[Geolocation] Position found: ${latitude}, ${longitude}`);
       
       try {
+        console.log('[Backend] Sending /api/check-ins/sponsor request...');
         const response = await fetch('/api/check-ins/sponsor', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${isAuthenticated ? (isAuthenticated as any).sub : ''}` // Using JWT sub as placeholder for ID
+            'Authorization': `Bearer ${isAuthenticated ? (isAuthenticated as any).sub : ''}` 
           },
           body: JSON.stringify({
-            venueId: '1', // Placeholder for now, should use nearest venue
+            venueId: '1', 
             latitude,
             longitude,
             caption: 'Dropped a Vibe!',
@@ -98,17 +103,23 @@ function App() {
           })
         });
 
+        console.log('[Backend] Response status:', response.status);
         if (response.ok) {
+          const result = await response.json();
+          console.log('[Backend] Vibe Drop Success:', result);
           alert(`Success! Vibe dropped at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
         } else {
           const err = await response.json();
-          console.error(err);
+          console.error('[Backend] Vibe Drop Failed:', err);
           alert("Failed to drop Vibe: " + (err.error || "Unknown error"));
         }
       } catch (e) {
-        console.error(e);
+        console.error('[Network] Fetch error during Vibe Drop:', e);
         alert("Network error occurred");
       }
+    }, (error) => {
+        console.error('[Geolocation] Error getting position:', error.message);
+        alert('Gagal mendapatkan lokasi: ' + error.message);
     });
   };
 
@@ -136,13 +147,16 @@ function App() {
       <nav className="absolute bottom-8 left-0 right-0 z-30 flex justify-center pointer-events-none">
         <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl px-8 py-4 rounded-full shadow-2xl flex gap-10 items-center border border-zinc-200 dark:border-zinc-800 pointer-events-auto">
           <button 
-            onClick={() => console.log('Home clicked')}
+            onClick={() => console.log('[UI] Home button clicked')}
             className="text-blue-600 dark:text-blue-400 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
           >
             <Home size={28} strokeWidth={2.5} />
           </button>
           
-          <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90">
+          <button 
+            onClick={() => console.log('[UI] Info/Activity button clicked')}
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
+          >
             <Info size={28} strokeWidth={2.5} />
           </button>
 
@@ -155,7 +169,10 @@ function App() {
             <MapPin size={32} fill="white" />
           </button>
 
-          <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90">
+          <button 
+            onClick={() => console.log('[UI] User Profile button clicked')}
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90"
+          >
             <User size={28} strokeWidth={2.5} />
           </button>
         </div>
