@@ -27,9 +27,9 @@ function App() {
         // Use decoded data temporarily until backend returns full user object
         const optimisticUser = {
           email: decoded.email,
-          username: decoded.name || decoded.email.split('@')[0], // Fallback name
-          avatarUrl: decoded.picture,
-          walletAddress: '0xe087a0ab3b923216b1792aa6343efa5b6bdd90c7c684741e047c3b9b5629e077', // Default admin wallet for now
+          username: decoded.name || decoded.given_name || decoded.email.split('@')[0], 
+          avatarUrl: decoded.picture || decoded.photo || decoded.avatar,
+          walletAddress: '0xe087a0ab3b923216b1792aa6343efa5b6bdd90c7c684741e047c3b9b5629e077', 
           ...decoded
         };
         

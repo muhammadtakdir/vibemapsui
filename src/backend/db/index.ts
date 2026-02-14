@@ -7,9 +7,12 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const connectionString = process.env.DATABASE_URL!;
+// Log connection (masked password) to debug ENOTFOUND
+console.log('[Database] Attempting connection to:', connectionString.replace(/:([^:@]+)@/, ':***@'));
+
 const client = postgres(connectionString, { 
   prepare: false,
-  ssl: { rejectUnauthorized: false } // Fix for Supabase self-signed certs in Transaction Mode
+  ssl: { rejectUnauthorized: false }
 });
 export const db = drizzle(client, { schema });
 
