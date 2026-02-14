@@ -7,10 +7,16 @@ export const zkLoginConfig = {
 };
 
 export const initZkLogin = () => {
+    console.log('Initializing zkLogin...');
+    console.log('Client ID:', zkLoginConfig.CLIENT_ID);
+    console.log('Redirect URI:', zkLoginConfig.REDIRECT_URI);
+
     const ephemeralKeyPair = new Ed25519Keypair();
     const randomness = generateRandomness();
-    const maxEpoch = 2000; // Should fetch current epoch and add buffer
+    const maxEpoch = 2000; 
     const nonce = generateNonce(ephemeralKeyPair.getPublicKey(), maxEpoch, randomness);
+
+    console.log('Generated Nonce:', nonce);
 
     // Save state to localStorage for callback handling
     localStorage.setItem('zklogin_state', JSON.stringify({

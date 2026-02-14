@@ -2,8 +2,20 @@ import { initZkLogin } from '../lib/zklogin';
 
 export const LoginScreen = () => {
   const handleLogin = () => {
-    const loginUrl = initZkLogin();
-    window.location.href = loginUrl;
+    console.log('Login button clicked');
+    try {
+      const loginUrl = initZkLogin();
+      console.log('Generated Login URL:', loginUrl);
+      
+      if (!loginUrl || loginUrl.includes('YOUR_GOOGLE_CLIENT_ID_PLACEHOLDER')) {
+        alert('Google Client ID belum diatur! Pastikan VITE_GOOGLE_CLIENT_ID ada di .env atau Vercel.');
+      }
+      
+      window.location.href = loginUrl;
+    } catch (error) {
+      console.error('Error during zkLogin initialization:', error);
+      alert('Gagal memulai login: ' + (error as Error).message);
+    }
   };
 
   return (
