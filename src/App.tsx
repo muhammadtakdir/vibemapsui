@@ -6,7 +6,7 @@ import { LoginScreen } from './components/LoginScreen'
 import { useVenueStore } from './store/useVenueStore'
 import { useAuthStore } from './store/useAuthStore'
 import { jwtDecode } from 'jwt-decode'
-import { Home, User, Info } from 'lucide-react'
+import { Home, User, Info, MapPin } from 'lucide-react'
 
 function App() {
   const { selectedVenue } = useVenueStore()
@@ -34,13 +34,55 @@ function App() {
     document.documentElement.className = WebApp.colorScheme || 'dark'
   }, [login])
 
+  const handleVibeDrop = async () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported");
+      return;
+    }
+
+    WebApp.HapticFeedback.impactOccurred('heavy');
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const { latitude, longitude } = position.coords;
+      
+      try {
+        const response = await fetch('/api/check-ins/sponsor', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${isAuthenticated ? (isAuthenticated as any).sub : ''}` // Using JWT sub as placeholder for ID
+          },
+          body: JSON.stringify({
+            venueId: '1', // Placeholder for now, should use nearest venue
+            latitude,
+            longitude,
+            caption: 'Dropped a Vibe!',
+            imageUrl: 'https://vibemap.app/default-stamp.png',
+            rating: 5
+          })
+        });
+
+        if (response.ok) {
+          alert(`Success! Vibe dropped at ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        } else {
+          const err = await response.json();
+          console.error(err);
+          alert("Failed to drop Vibe: " + (err.error || "Unknown error"));
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Network error occurred");
+      }
+    });
+  };
+
   if (!isAuthenticated) {
     return <LoginScreen />;
   }
 
   return (
     <div className="h-screen w-full relative overflow-hidden bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
-      {/* Map Background */}
+      {/* ... previous code ... */}
       <main className="absolute inset-0 z-0">
         <MapView />
       </main>
@@ -63,9 +105,20 @@ function App() {
           >
             <Home size={28} strokeWidth={2.5} />
           </button>
+          
           <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90">
             <Info size={28} strokeWidth={2.5} />
           </button>
+
+          {/* Large Drop Vibe Button */}
+          <button 
+            onClick={handleVibeDrop}
+            className="bg-blue-600 dark:bg-blue-500 text-white p-5 rounded-full shadow-lg shadow-blue-500/40 -mt-12 border-4 border-white dark:border-zinc-900 transition-all active:scale-75 flex items-center justify-center relative"
+          >
+            <div className="absolute animate-ping w-full h-full rounded-full bg-blue-400 opacity-20"></div>
+            <MapPin size={32} fill="white" />
+          </button>
+
           <button className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-all active:scale-90">
             <User size={28} strokeWidth={2.5} />
           </button>

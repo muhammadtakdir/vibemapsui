@@ -80,6 +80,8 @@ module vibe_map::venue_registry {
             image_url,
             caption,
             rating,
+            venue.latitude,
+            venue.longitude,
             clock,
             ctx
         )

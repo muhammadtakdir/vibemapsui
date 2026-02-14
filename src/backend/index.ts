@@ -59,7 +59,7 @@ app.get('/api/venues/nearby', async (c) => {
 // --- Check-ins ---
 app.post('/api/check-ins/sponsor', authMiddleware, async (c) => {
   const user = c.get('user') as Variables['user'];
-  const { venueId, imageUrl, caption, rating } = await c.req.json();
+  const { venueId, imageUrl, caption, rating, latitude, longitude } = await c.req.json();
 
   const venue = await db.query.venues.findFirst({
     where: eq(venues.id, venueId)
@@ -74,6 +74,8 @@ app.post('/api/check-ins/sponsor', authMiddleware, async (c) => {
     imageUrl,
     caption,
     rating,
+    latitude: latitude || venue.latitude,
+    longitude: longitude || venue.longitude,
     userAddress: user.walletAddress
   });
 
@@ -81,6 +83,29 @@ app.post('/api/check-ins/sponsor', authMiddleware, async (c) => {
     txBytes,
     sponsorSignature
   });
+});
+
+// --- Vibe Drop ---
+app.post('/api/vibe/drop', authMiddleware, async (c) => {
+  const user = c.get('user') as Variables['user'];
+  const { latitude, longitude, caption, imageUrl } = await c.req.json();
+
+  // In a real app, you would verify the location distance between user and claimed venue
+  // or just allow dropping "Vibe" anywhere. 
+  // Let's implement the coordinate-based dropping.
+
+  // Multiplier for Move U64 (lat/lng * 1,000,000)
+  const latU64 = BigInt(Math.floor(latitude * 1000000));
+  const lngU64 = BigInt(Math.floor(longitude * 1000000));
+
+  // Placeholder venue ID for coordinate drops (or use a special "Global" venue)
+  const GLOBAL_VENUE_ID = "0xd43562d2f88f312db3fe1d8428eb46cdd24178926fa0d46e8d032346348b59fc"; // AdminCap/Venue placeholder
+
+  // Logic to call Move mint_internal or venue_registry::check_in
+  // For simplicity, we use the check_in function but with dynamic coordinates
+  // (We would need to update Sui library to support this)
+
+  return c.json({ message: "Vibe drop logic initiated", latU64: latU64.toString() });
 });
 
 export default {

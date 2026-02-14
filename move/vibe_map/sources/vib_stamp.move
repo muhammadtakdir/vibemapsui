@@ -17,6 +17,8 @@ module vibe_map::vib_stamp {
         image_url: Url,
         caption: String,
         rating: u8,
+        latitude: u64,
+        longitude: u64,
         timestamp: u64,
     }
 
@@ -34,6 +36,8 @@ module vibe_map::vib_stamp {
         image_url: vector<u8>,
         caption: String,
         rating: u8,
+        latitude: u64,
+        longitude: u64,
         clock: &Clock,
         ctx: &mut TxContext
     ): VibStamp {
@@ -57,6 +61,8 @@ module vibe_map::vib_stamp {
             image_url: url::new_unsafe_from_bytes(image_url),
             caption,
             rating,
+            latitude,
+            longitude,
             timestamp: clock.timestamp_ms(),
         };
 

@@ -25,11 +25,17 @@ export const sui = {
     imageUrl: string,
     caption: string,
     rating: number,
+    latitude: number,
+    longitude: number,
     userAddress: string
   }) {
     const txb = new Transaction();
     const PACKAGE_ID = process.env.PACKAGE_ID!;
     
+    // Multiplier for Move U64 (lat/lng * 1,000,000)
+    const latU64 = Math.floor(params.latitude * 1000000);
+    const lngU64 = Math.floor(params.longitude * 1000000);
+
     txb.moveCall({
       target: `${PACKAGE_ID}::venue_registry::check_in`,
       arguments: [
@@ -37,6 +43,8 @@ export const sui = {
         txb.pure.vector('u8', Array.from(new TextEncoder().encode(params.imageUrl))),
         txb.pure.string(params.caption),
         txb.pure.u8(params.rating),
+        txb.pure.u64(latU64),
+        txb.pure.u64(lngU64),
         txb.object('0x6'), // clock object
       ],
     });
