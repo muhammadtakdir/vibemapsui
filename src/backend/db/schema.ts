@@ -2,7 +2,8 @@ import { pgTable, uuid, text, doublePrecision, timestamp, integer, boolean, prim
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  telegramId: text("telegram_id").unique().notNull(),
+  telegramId: text("telegram_id").unique(), // Now optional
+  email: text("email").unique(), // Added for Google Login
   walletAddress: text("wallet_address").unique().notNull(),
   username: text("username"),
   avatarUrl: text("avatar_url"),

@@ -24,6 +24,23 @@ app.use('*', cors());
 app.get('/', (c) => c.text('VibeMap API v1'));
 
 // --- Authentication ---
+app.post('/api/auth/google', async (c) => {
+  const { email, username, avatarUrl, walletAddress } = await c.req.json();
+  
+  // Upsert user based on email
+  const newUser = await db.insert(users).values({
+    email,
+    walletAddress,
+    username,
+    avatarUrl,
+  }).onConflictDoUpdate({
+    target: users.email,
+    set: { walletAddress, avatarUrl, username }
+  }).returning();
+
+  return c.json({ user: newUser[0] });
+});
+
 // Placeholder for Telegram InitData verification
 app.post('/api/auth/telegram', async (c) => {
   const { initData, walletAddress } = await c.req.json();

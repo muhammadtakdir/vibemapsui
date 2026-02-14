@@ -21,7 +21,22 @@ function App() {
     if (idToken) {
       try {
         const decoded: any = jwtDecode(idToken);
-        login(decoded);
+        console.log('User logged in:', decoded);
+        
+        // Sync with Supabase Backend
+        fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: decoded.email,
+            username: decoded.name,
+            avatarUrl: decoded.picture,
+            walletAddress: '0xe087a0ab3b923216b1792aa6343efa5b6bdd90c7c684741e047c3b9b5629e077', // Placeholder
+          })
+        }).then(res => res.json()).then(data => {
+          login(data.user);
+        });
+
         window.history.replaceState(null, '', window.location.pathname);
       } catch (e) {
         console.error('Invalid token', e);
