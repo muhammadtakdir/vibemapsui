@@ -18,8 +18,8 @@ type Variables = {
 
 export const app = new Hono<{ Variables: Variables }>();
 
-app.use('*', cors());
-// app.use('*', logger()); // Vercel logs requests automatically, removing to prevent adapter issues
+// app.use('*', logger());
+// app.use('*', cors()); // Removed to prevent Vercel Node runtime crash. Same-origin requests don't need this.
 
 app.get('/', (c) => c.text('VibeMap API v1'));
 
